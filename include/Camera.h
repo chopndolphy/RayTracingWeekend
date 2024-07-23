@@ -1,32 +1,41 @@
 #pragma once
 
-#include "vec3.h"
+#include "rt_math.h"
+#include "hittable_list.h"
 
 class Camera {
     public:
-        Camera(unsigned int imageWidth, double aspectRatio, math::point3 cameraCenter)
-        : imageWidth(imageWidth), aspectRatio(aspectRatio), cameraCenter(cameraCenter) {}
+        Camera();
+        double aspectRatio  = 1.0;
+        int imageWidth      = 100;
+        int samplesPerPixel = 10;
+        int maxDepth        = 10;
 
-        const unsigned int ImageWidth() const { return imageWidth; }
-        const unsigned int ImageHeight() const { return int(imageWidth / aspectRatio); }
-        const double AspectRatio() const { return aspectRatio; }
-        const double FocalLength() const { return focalLength; }
-        const double ViewportHeight() const { return viewportHeight; }
-        const double ViewportWidth() const { return viewportHeight * double(imageWidth)/ImageHeight(); }
-        const math::point3 CameraCenter() const { return cameraCenter; }
-        const math::vec3 ViewportU() const { return math::vec3(ViewportWidth(), 0, 0); }
-        const math::vec3 ViewportV() const { return math::vec3(0, -viewportHeight, 0); }
-        const math::vec3 PixelDeltaU() const { return ViewportU() / imageWidth; }
-        const math::vec3 PixelDeltaV() const { return ViewportV() / ImageHeight(); }
-        const math::vec3 ViewportUpperLeft() const {
-            return cameraCenter - math::vec3(0, 0, focalLength) - ViewportU() / 2 - ViewportV() / 2;
-        }
-        const math::vec3 Pixel00Loc() const { return ViewportUpperLeft() + 0.5 * (PixelDeltaU() + PixelDeltaV()); }
+        double vfov = 90;
+        rtm::point3 lookFrom = rtm::point3(0, 0, 0);
+        rtm::point3 lookAt = rtm::point3(0, 0, -1);
+        rtm::vec3 viewUp = rtm::vec3(0, 1, 0);
+
+        double defocusAngle = 0;
+        double focusDistance = 10;
+        
+        void RenderScenePPM(const hittable_list& world);
     
     private:
-        unsigned int imageWidth;
-        double aspectRatio;
-        math::point3 cameraCenter;
-        double focalLength = 1.0;
-        double viewportHeight = 2.0;
+        int imageHeight;
+        double pixelSamplesScale;
+        rtm::point3 center = rtm::point3{0.0, 0.0, 0.0};
+        rtm::vec3 pixel00Loc;
+        rtm::vec3 pixelDeltaU;
+        rtm::vec3 pixelDeltaV;
+        rtm::vec3 u, v, w;
+        rtm::vec3 defocusDiskU;
+        rtm::vec3 defocusDiskV;
+
+        void initialize();
+        rtm::color rayColor(const rtm::ray& r, int depth, const hittable& world) const;
+        void writeColor(std::ostream &out, const rtm::color &pixelColor) const;
+        rtm::ray getRay(int i, int j) const;
+        rtm::vec3 sampleSquare() const;
+        rtm::point3 defocusDiskSample() const;
 };

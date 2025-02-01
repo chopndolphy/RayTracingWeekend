@@ -57,7 +57,8 @@ void Application::Run() {
                 if (chooseMat < 0.6) {
                     rtm::color albedo = rtm::random_vec3()*rtm::random_vec3();
                     materials.push_back(std::make_shared<lambertian>(albedo));
-                    bookWorld.add(std::make_shared<sphere>(center, 0.2, materials.back()));
+                    rtm::point3 center2 = center + rtm::vec3(0, rtm::random_double(0, 0.5), 0);
+                    bookWorld.add(std::make_shared<sphere>(center, center2, 0.2, materials.back()));
                 } else if (chooseMat < 0.8) {
                     rtm::color albedo = rtm::random_vec3(0.5, 1);
                     double fuzz = rtm::random_double(0, 0.5);
@@ -88,8 +89,8 @@ void Application::Run() {
     Camera bookCam;
 
     bookCam.aspectRatio     = 16.0/9.0;
-    bookCam.imageWidth      = 1280;
-    bookCam.samplesPerPixel = 1000;
+    bookCam.imageWidth      = 400;
+    bookCam.samplesPerPixel = 100;
     bookCam.maxDepth        = 50;
 
     bookCam.vfov     = 20;

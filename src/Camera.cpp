@@ -1,6 +1,7 @@
 #include "Camera.h"
 
 #include "material.h"
+#include "rt_math.h"
 
 #include <chrono>
 
@@ -104,8 +105,9 @@ rtm::ray Camera::getRay(int i, int j) const {
                             + ((j + offset.y())*pixelDeltaV);
     rtm::point3 rayOrigin = (defocusAngle <= 0) ? center : defocusDiskSample();
     rtm::vec3 rayDirection = pixelSample - rayOrigin;
+    double ray_time = rtm::random_double();
 
-    return rtm::ray(rayOrigin, rayDirection);
+    return rtm::ray(rayOrigin, rayDirection, ray_time);
 }
 rtm::vec3 Camera::sampleSquare() const {
     return rtm::vec3(rtm::random_double() - 0.5, rtm::random_double() - 0.5, 0);

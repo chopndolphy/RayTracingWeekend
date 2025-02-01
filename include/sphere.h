@@ -5,11 +5,17 @@
 
 class sphere : public hittable {
     public:
-        sphere(const rtm::point3& center, double radius, std::shared_ptr<material> mat)
-            : center(center), radius(fmax(0, radius)), mat(mat) {}
+        // Stationary Sphere
+        sphere(const rtm::point3& static_center, double radius, std::shared_ptr<material> mat)
+            : center(static_center, rtm::vec3(0, 0, 0)), radius(std::fmax(0, radius)), mat(mat) {}
+
+        // Moving Sphere
+        sphere(const rtm::point3& center1, const rtm::point3& center2, double radius, std::shared_ptr<material> mat)
+            : center(center1, center2 - center1), radius(std::fmax(0, radius)), mat(mat) {}
 
     bool hit(const rtm::ray &r, rtm::interval rayT, hit_record &rec) const override {
-        rtm::vec3 oc = center - r.origin();
+        rtm::point3 current_center = center.at(r.time());
+        rtm::vec3 oc = current_center - r.origin();
         double a = r.direction().length_squared();
         double h = rtm::dot(r.direction(), oc);
         double c = oc.length_squared() - radius*radius;
@@ -30,14 +36,14 @@ class sphere : public hittable {
         } 
         rec.t = root;
         rec.p = r.at(rec.t);
-        rtm::vec3 outward_normal = (rec.p - center)/radius;
+        rtm::vec3 outward_normal = (rec.p - current_center)/radius;
         rec.set_face_normal(r, outward_normal);
         rec.mat = mat;
 
         return true;
     }
     private:
-        rtm::point3 center;
+        rtm::ray center;
         double radius;
         std::shared_ptr<material> mat;
 };

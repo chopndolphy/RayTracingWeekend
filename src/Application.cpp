@@ -3,7 +3,9 @@
 #include "hittable_list.h"
 #include "sphere.h"
 #include "material.h"
+#include "bvh.h"
 
+#include <memory>
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -42,10 +44,9 @@ void Application::Run() {
     // cam.RenderScenePPM(world);
 
     hittable_list bookWorld;
-    std::vector<std::shared_ptr<material>> materials;
 
-    materials.push_back(std::make_shared<lambertian>(rtm::color(0.5, 0.5, 0.5)));
-    bookWorld.add(std::make_shared<sphere>(rtm::point3(0, -1000, 0), 1000, materials.back()));
+    auto ground_material = std::make_shared<lambertian>(rtm::color(0.5, 0.5, 0.5));
+    bookWorld.add(std::make_shared<sphere>(rtm::point3(0, -1000, 0), 1000, ground_material));
 
     for (int a = -11; a < 11; a++) {
         for (int b = -11; b < 11; b++) {
@@ -53,38 +54,41 @@ void Application::Run() {
             rtm::point3 center(a + 0.9*rtm::random_double(), 0.2, b + 0.9*rtm::random_double());
 
             if ((center - rtm::point3(4, 0.2, 0)).length() > 0.9) {
+                std::shared_ptr<material> sphere_material;
 
                 if (chooseMat < 0.6) {
                     rtm::color albedo = rtm::random_vec3()*rtm::random_vec3();
-                    materials.push_back(std::make_shared<lambertian>(albedo));
+                    sphere_material = std::make_shared<lambertian>(albedo);
                     rtm::point3 center2 = center + rtm::vec3(0, rtm::random_double(0, 0.5), 0);
-                    bookWorld.add(std::make_shared<sphere>(center, center2, 0.2, materials.back()));
+                    bookWorld.add(std::make_shared<sphere>(center, center2, 0.2, sphere_material));
                 } else if (chooseMat < 0.8) {
                     rtm::color albedo = rtm::random_vec3(0.5, 1);
                     double fuzz = rtm::random_double(0, 0.5);
-                    materials.push_back(std::make_shared<metal>(albedo, fuzz));
-                    bookWorld.add(std::make_shared<sphere>(center, 0.2, materials.back()));
+                    sphere_material = std::make_shared<metal>(albedo, fuzz);
+                    bookWorld.add(std::make_shared<sphere>(center, 0.2, sphere_material));
                 } else if (chooseMat < 0.9) {
-                    materials.push_back(std::make_shared<dielectric>(1.5));
-                    bookWorld.add(std::make_shared<sphere>(center, 0.2, materials.back()));
+                    sphere_material = std::make_shared<dielectric>(1.5);
+                    bookWorld.add(std::make_shared<sphere>(center, 0.2, sphere_material));
                 } else {
-                    materials.push_back(std::make_shared<dielectric>(1.5));
-                    bookWorld.add(std::make_shared<sphere>(center, 0.2, materials.back()));
+                    sphere_material = std::make_shared<dielectric>(1.5);
+                    bookWorld.add(std::make_shared<sphere>(center, 0.2, sphere_material));
                     
-                    materials.push_back(std::make_shared<dielectric>(1.0/1.50));
-                    bookWorld.add(std::make_shared<sphere>(center, 0.16, materials.back()));
+                    sphere_material = std::make_shared<dielectric>(1.0/1.50);
+                    bookWorld.add(std::make_shared<sphere>(center, 0.16, sphere_material));
                 }
             }
         }
     }
-    materials.push_back(std::make_shared<dielectric>(1.5));
-    bookWorld.add(std::make_shared<sphere>(rtm::point3(0, 1, 0), 1.0, materials.back()));
+    auto material1 = std::make_shared<dielectric>(1.5);
+    bookWorld.add(std::make_shared<sphere>(rtm::point3(0, 1, 0), 1.0, material1));
 
-    materials.push_back(std::make_shared<lambertian>(rtm::color(0.4, 0.2, 0.1)));
-    bookWorld.add(std::make_shared<sphere>(rtm::point3(-4, 1, 0), 1.0, materials.back()));
+    auto material2 = std::make_shared<lambertian>(rtm::color(0.4, 0.2, 0.1));
+    bookWorld.add(std::make_shared<sphere>(rtm::point3(-4, 1, 0), 1.0, material2));
 
-    materials.push_back(std::make_shared<metal>(rtm::color(0.7, 0.6, 0.5), 0.0));
-    bookWorld.add(std::make_shared<sphere>(rtm::point3(4, 1, 0), 1.0, materials.back()));
+    auto material3 = std::make_shared<metal>(rtm::color(0.7, 0.6, 0.5), 0.0);
+    bookWorld.add(std::make_shared<sphere>(rtm::point3(4, 1, 0), 1.0, material3));
+
+    bookWorld = hittable_list(std::make_shared<bvh_node>(bookWorld));
 
     Camera bookCam;
 

@@ -7,11 +7,21 @@ class sphere : public hittable {
     public:
         // Stationary Sphere
         sphere(const rtm::point3& static_center, double radius, std::shared_ptr<material> mat)
-            : center(static_center, rtm::vec3(0, 0, 0)), radius(std::fmax(0, radius)), mat(mat) {}
+            : center(static_center, rtm::vec3(0, 0, 0)), radius(std::fmax(0, radius)), mat(mat)
+        {
+                rtm::vec3 rvec = rtm::vec3(radius, radius, radius);
+                bbox = aabb(static_center - rvec, static_center + rvec);
+        }
 
         // Moving Sphere
         sphere(const rtm::point3& center1, const rtm::point3& center2, double radius, std::shared_ptr<material> mat)
-            : center(center1, center2 - center1), radius(std::fmax(0, radius)), mat(mat) {}
+            : center(center1, center2 - center1), radius(std::fmax(0, radius)), mat(mat)
+        {
+            auto rvec = rtm::vec3(radius, radius, radius);
+            aabb box1(center.at(0) - rvec, center.at(0) + rvec);
+            aabb box2(center.at(1) - rvec, center.at(1) + rvec);
+            bbox = aabb(box1, box2);
+        }
 
     bool hit(const rtm::ray &r, rtm::interval rayT, hit_record &rec) const override {
         rtm::point3 current_center = center.at(r.time());
@@ -36,14 +46,18 @@ class sphere : public hittable {
         } 
         rec.t = root;
         rec.p = r.at(rec.t);
-        rtm::vec3 outward_normal = (rec.p - current_center)/radius;
+        rtm::vec3 outward_normal = (rec.p - current_center) / radius;
         rec.set_face_normal(r, outward_normal);
         rec.mat = mat;
 
         return true;
     }
+
+    aabb bounding_box() const override { return bbox; }
+
     private:
         rtm::ray center;
         double radius;
         std::shared_ptr<material> mat;
+        aabb bbox;
 };

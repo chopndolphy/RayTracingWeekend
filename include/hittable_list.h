@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aabb.h"
 #include "hittable.h"
 #include "rt_math.h"
 
@@ -16,6 +17,7 @@ class hittable_list : public hittable {
 
         void add(std::shared_ptr<hittable> object) {
             objects.push_back(object);
+            bbox = aabb(bbox, object->bounding_box());
         }
 
         bool hit(const rtm::ray& r, rtm::interval rayT, hit_record& rec) const override {
@@ -33,4 +35,9 @@ class hittable_list : public hittable {
 
             return hitAnything;
         }
+
+        aabb bounding_box() const override { return bbox; }
+
+    private:
+        aabb bbox;
 };

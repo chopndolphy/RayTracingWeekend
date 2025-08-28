@@ -1,19 +1,31 @@
 #pragma once
 
+#include "ray.h"
 #include "rt_math.h"
 #include "hittable.h"
+#include "texture.h"
+#include "vec3.h"
+#include <memory>
 
 class material {
     public:
         virtual ~material() = default;
 
+        virtual rtm::color emitted(double u, double v, const rtm::point3 &p) const {
+            return rtm::color(0, 0, 0);
+        }
+
         virtual bool scatter(
             const rtm::ray& rIn, const hit_record& rec, rtm::color& attentuation, rtm::ray& scattered
-        ) const = 0;
+        ) const {
+            return false;
+        };
 };
+
 class lambertian : public material {
     public:
-        lambertian(const rtm::color& albedo) : albedo(albedo) {}
+        lambertian(const rtm::color& albedo) : tex(std::make_shared<solid_color>(albedo)) {}
+        lambertian(std::shared_ptr<texture> tex) : tex(tex) {}
 
         bool scatter(
             const rtm::ray& rIn, const hit_record& rec, rtm::color& attenuation, rtm::ray& scattered
@@ -25,12 +37,13 @@ class lambertian : public material {
             }
 
             scattered = rtm::ray(rec.p, scatterDirection, rIn.time());
-            attenuation = albedo;
+            attenuation = tex->value(rec.u, rec.v, rec.p);
             return true;
         }
     private:
-        rtm::color albedo;
+        std::shared_ptr<texture> tex;
 };
+
 class metal : public material {
     public:
         metal(const rtm::color& albedo, double fuzz) : albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1) {}
@@ -49,6 +62,7 @@ class metal : public material {
         rtm::color albedo;
         double fuzz;
 };
+
 class dielectric : public material {
     public:
         dielectric(double refractionIndex) : refractionIndex(refractionIndex) {}
@@ -76,4 +90,31 @@ class dielectric : public material {
         }
     private:
         double refractionIndex;
+};
+
+class diffuse_light : public material {
+    public:
+        diffuse_light(std::shared_ptr<texture> tex) : tex(tex) {}
+        diffuse_light(const rtm::color &emit) : tex(std::make_shared<solid_color>(emit)) {}
+
+        rtm::color emitted(double u, double v, const rtm::point3 &p) const override {
+            return tex->value(u, v, p);
+        }
+    private:
+        std::shared_ptr<texture> tex;
+};
+
+class isotropic : public material {
+    public:
+        isotropic(const rtm::color &albedo) : tex(std::make_shared<solid_color>(albedo)) {}
+        isotropic(std::shared_ptr<texture> tex) : tex(tex) {}
+
+        bool scatter(const rtm::ray &r_in, const hit_record &rec, rtm::color &attenuation, rtm::ray &scattered)
+        const override {
+            scattered = rtm::ray(rec.p, rtm::random_unit_vector(), r_in.time());
+            attenuation = tex->value(rec.u, rec.v, rec.p);
+            return true;
+        }
+    private:
+        std::shared_ptr<texture> tex;
 };

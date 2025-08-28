@@ -41,4 +41,8 @@ namespace rtm {
     };
     static const interval empty_interval    = interval(+std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity());
     static const interval universe_interval = interval(-std::numeric_limits<double>::infinity(), +std::numeric_limits<double>::infinity());
+
 }
+rtm::interval operator+(const rtm::interval &ival, double displacement);
+
+rtm::interval operator+(double displacement, const rtm::interval &ival);

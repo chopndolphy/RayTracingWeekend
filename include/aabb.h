@@ -2,6 +2,7 @@
 
 #include "interval.h"
 #include "rt_math.h"
+#include "vec3.h"
 
 class aabb {
     public:
@@ -12,12 +13,16 @@ class aabb {
         aabb() {}
 
         aabb(const rtm::interval &x, const rtm::interval &y, const rtm::interval &z)
-            : x(x), y(y), z(z) {}
+        : x(x), y(y), z(z) {
+            pad_to_minimums();
+        }
 
         aabb(const rtm::point3 &a, const rtm::point3 &b) {
             x = (a[0] <= b[0]) ? rtm::interval(a[0], b[0]) : rtm::interval(b[0], a[0]);
             y = (a[1] <= b[1]) ? rtm::interval(a[1], b[1]) : rtm::interval(b[1], a[1]);
             z = (a[2] <= b[2]) ? rtm::interval(a[2], b[2]) : rtm::interval(b[2], a[2]);
+
+            pad_to_minimums();
         }
 
         aabb(const aabb &box0, const aabb &box1) {
@@ -68,4 +73,16 @@ class aabb {
 
         static const aabb empty;
         static const aabb universe;
+
+    private:
+
+        void pad_to_minimums() {
+            double delta = 0.0001;
+            if (x.size() < delta) x = x.expand(delta);
+            if (y.size() < delta) y = y.expand(delta);
+            if (z.size() < delta) z = z.expand(delta);
+        }
 };
+
+aabb operator+(const aabb &bbox, const rtm::vec3 &offset);
+aabb operator+(const rtm::vec3 &offset, const aabb &bbox);

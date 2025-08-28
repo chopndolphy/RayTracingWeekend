@@ -2,6 +2,7 @@
 
 #include "rt_math.h"
 #include "hittable_list.h"
+#include "vec3.h"
 
 class Camera {
     public:
@@ -10,6 +11,7 @@ class Camera {
         int imageWidth      = 100;
         int samplesPerPixel = 10;
         int maxDepth        = 10;
+        rtm::color background;
 
         double vfov = 90;
         rtm::point3 lookFrom = rtm::point3(0, 0, 0);

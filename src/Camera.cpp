@@ -2,14 +2,87 @@
 
 #include "material.h"
 #include "rt_math.h"
+#include "framebuffer.h"
 
 #include <chrono>
+#include <thread>
+
+#define THREADS 4
 
 Camera::Camera() {
     initialize();
 }
 void Camera::RenderScenePPM(const hittable_list& world) {
     initialize();    
+
+    //framebuffer fb(imageWidth, imageHeight);
+    //std::atomic<int> counter = 0;
+    
+    //auto worker_task = [&](int id) {
+        //for (int i = 0; i < imageHeight; i++) {
+            //for (int j = id; i < imageWidth; j += THREADS) {
+                //rtm::color pixelColor(0, 0, 0);
+
+                //for (int sample = 0; sample < samplesPerPixel; sample++) {
+                    //rtm::ray r = getRay(i, j);
+                    //pixelColor += rayColor(r, maxDepth, world);
+                //}
+
+                //pixelColor *= pixelSamplesScale;
+
+                //double r = pixelColor.x();
+                //double g = pixelColor.y();
+                //double b = pixelColor.z();
+
+                //r = rtm::linear_to_gamma(r);
+                //g = rtm::linear_to_gamma(g);
+                //b = rtm::linear_to_gamma(b);
+
+                //static const rtm::interval intensity(0.000, 0.999);
+
+                //pixel p;
+
+                //p.r = int(256*intensity.clamp(r));
+                //p.g = int(256*intensity.clamp(g));
+                //p.b = int(256*intensity.clamp(b));
+
+                //fb.buf[(i * imageHeight) + j] = p;
+            //}
+            //counter++;
+        //}
+    //};
+
+    //std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    //std::cout << "P3\n" << imageWidth << ' ' << imageHeight << "\n255\n";
+    //int seconds;
+
+    //std::vector<std::thread> threads;
+    //for (int i = 0; i < THREADS; i++) {
+        //threads.emplace_back(worker_task, i);
+    //}
+
+    //using namespace std::chrono_literals;
+
+    //while (counter < THREADS * imageHeight) {
+        //seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - begin).count();
+        //std::clog << "\r[" <<  std::floor(seconds/60) << "m" << seconds % 60 << "s] "
+        //<< "Scanlines completed: " << int(std::floor(counter/THREADS)) << '/' << imageHeight << std::flush;
+        //std::this_thread::sleep_for(1s);    
+    //}
+
+    //for (std::thread &t : threads) {
+        //t.join();
+    //}
+
+    //for (int j = 0; j < imageHeight; j++) {
+        //for (int i = 0; i < imageWidth; i++) {
+            //std::cout << fb.buf[(i * imageHeight) + j].r << ' ' << fb.buf[(i * imageHeight) + j].g << ' ' << fb.buf[i * imageHeight + j].b << '\n';
+        //}
+    //}
+
+    //seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - begin).count();
+    //std::clog << "\rRendered successfully in " << std::floor(seconds/60) << "m" << seconds % 60 << "s."
+    //<< "                                               " << std::endl;
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     std::cout << "P3\n" << imageWidth << ' ' << imageHeight << "\n255\n";
@@ -69,18 +142,21 @@ rtm::color Camera::rayColor(const rtm::ray &r, int depth, const hittable& world)
 
     hit_record rec;
 
-    if (world.hit(r, rtm::interval(0.001, rtm::infinity), rec)) {
-        rtm::ray scattered;
-        rtm::color attenuation;
-        if (rec.mat->scatter(r, rec, attenuation, scattered)) {
-            return attenuation*rayColor(scattered, depth - 1, world);
-        }
-        return rtm::color(0, 0, 0);
+    if (!world.hit(r, rtm::interval(0.001, rtm::infinity), rec)) {
+        return background;
     }
 
-    rtm::vec3 unitDirection = rtm::normalize(r.direction());
-    double a = 0.5*(unitDirection.y() + 1.0);
-    return (1.0 - a)*rtm::color(1.0, 1.0, 1.0) + a*rtm::color(0.5, 0.7, 1.0);
+    rtm::ray scattered;
+    rtm::color attenuation;
+    rtm::color color_from_emission = rec.mat->emitted(rec.u, rec.v, rec.p);
+
+    if (!rec.mat->scatter(r, rec, attenuation, scattered)) {
+        return color_from_emission;
+    }
+
+    rtm::color color_from_scatter = attenuation * rayColor(scattered, depth - 1, world);
+
+    return color_from_emission + color_from_scatter;
 }
 void Camera::writeColor(std::ostream& out, const rtm::color& pixelColor) const {
     double r = pixelColor.x();

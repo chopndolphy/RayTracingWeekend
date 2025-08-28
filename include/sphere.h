@@ -2,6 +2,7 @@
 
 #include "rt_math.h"
 #include "hittable.h"
+#include "vec3.h"
 
 class sphere : public hittable {
     public:
@@ -48,6 +49,7 @@ class sphere : public hittable {
         rec.p = r.at(rec.t);
         rtm::vec3 outward_normal = (rec.p - current_center) / radius;
         rec.set_face_normal(r, outward_normal);
+        get_sphere_uv(outward_normal, rec.u, rec.v);
         rec.mat = mat;
 
         return true;
@@ -60,4 +62,12 @@ class sphere : public hittable {
         double radius;
         std::shared_ptr<material> mat;
         aabb bbox;
+        
+        static void get_sphere_uv(const rtm::point3 &p, double &u, double &v) {
+            auto theta = std::acos(-p.y());
+            auto phi = std::atan2(-p.z(), p.x()) + rtm::pi;
+
+            u = phi / (2 * rtm::pi);
+            v = theta / rtm::pi;
+        }
 };
